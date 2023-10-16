@@ -21,7 +21,7 @@ st.title("ChatPDF")
 st.write("---")
 
 # File Upload
-uploaded_file = st.file_uploader("upload a PDF file")
+uploaded_file = st.file_uploader("upload a PDF file", type=['pdf'])
 st.write("---")
 
 def pdf_to_document(uploaded_file):
@@ -34,7 +34,7 @@ def pdf_to_document(uploaded_file):
     return pages
 
 if uploaded_file is not None:
-    pages = pdf_to_document(uploaded_file, type=['pdf'])
+    pages = pdf_to_document(uploaded_file)
     # Loader
     # loader = PyPDFLoader("unsu.pdf")
     # pages = loader.load_and_split()
