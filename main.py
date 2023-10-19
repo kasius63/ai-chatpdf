@@ -1,7 +1,9 @@
+# For cloud deployment
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
+# For local deployment
 # from dotenv import load_dotenv
 # load_dotenv()
 
@@ -12,6 +14,7 @@ from langchain.vectorstores import Chroma
 from langchain.chat_models import ChatOpenAI
 # from langchain.retrievers.multi_query import MultiQueryRetriever
 from langchain.chains import RetrievalQA
+from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 import streamlit as st
 import tempfile
 import os
@@ -52,6 +55,16 @@ if uploaded_file is not None:
     # Embedding
     db = Chroma.from_documents(texts, OpenAIEmbeddings())
 
+    #Stream 받아 줄 Hander 만들기
+    from langchain.callbacks.base import BaseCallbackHandler
+    class StreamHandler(BaseCallbackHandler):
+        def __init__(self, container, initial_text=""):
+            self.container = container
+            self.text=initial_text
+        def on_llm_new_token(self, token: str, **kwargs) -> None:
+            self.text+=token
+            self.container.markdown(self.text)
+            
     # Question
     #question = "아내가 무슨 음식을 먹고 싶어해?"
     st.header("PDF 문서 관련 질문해 보세요.")
@@ -68,7 +81,10 @@ if uploaded_file is not None:
 
     if st.button('질문하기'):
         with st.spinner('Wait for it...'):
-            llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0)
+            chat_box = st.empty()
+            stream_handler = StreamHandler(chat_box)
+            llm = ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0, streaming=True, callbacks=[stream_handler])
             qa_chain = RetrievalQA.from_chain_type(llm,retriever=db.as_retriever())
-            result = qa_chain({"query": question})
-            st.write(result["result"])
+            qa_chain({"query": question})
+            #result = qa_chain({"query": question})
+            #st.write(result["result"])
